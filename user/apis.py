@@ -29,8 +29,8 @@ class LoginApi(views.APIView):
             raise exceptions.AuthenticationFailed("Invalid Credentials")
 
         token = services.create_token(user_id=user.id)
-
-        resp = response.Response()
+        serializer = user_serializer.UserSerializer(user)
+        resp = response.Response(serializer.data)
 
         resp.set_cookie(key="jwt", value=token, httponly=True)
 
