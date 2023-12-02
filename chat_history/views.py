@@ -182,7 +182,7 @@ class SurveyUpdateApiView(APIView):
 
             # Update the survey options
             survey.options = new_options
-            #survey.survey_updated=True
+            survey.survey_updated=True
             survey.save()
 
             # Serialize and return the updated survey
@@ -224,7 +224,9 @@ class PolicyCardApiView(APIView):
             return Response({"message": "Policy cards generated successfully", "policy_cards": generated_policy_cards}, status=status.HTTP_201_CREATED)
             
         else:
+            '''
             data = {}
+            
             for i in survey.options:
                 data[i[0]]=i[1]
                 
@@ -245,7 +247,8 @@ class PolicyCardApiView(APIView):
                 else:
                     # If there's an error in serialization, you can handle it accordingly
                     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-            
-            return Response({"message": "Policy cards generated successfully", "policy_cards": generated_policy_cards}, status=status.HTTP_201_CREATED)
+                        return Response({"message": "Policy cards generated successfully", "policy_cards": generated_policy_cards}, status=status.HTTP_201_CREATED)
+            '''
+            return Response({"message": "ok" }, status=status.HTTP_201_CREATED)
                 
             
