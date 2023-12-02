@@ -224,7 +224,6 @@ class PolicyCardApiView(APIView):
             return Response({"message": "Policy cards generated successfully", "policy_cards": generated_policy_cards}, status=status.HTTP_201_CREATED)
             
         else:
-            '''
             data = {}
             
             for i in survey.options:
@@ -247,8 +246,6 @@ class PolicyCardApiView(APIView):
                 else:
                     # If there's an error in serialization, you can handle it accordingly
                     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-                        return Response({"message": "Policy cards generated successfully", "policy_cards": generated_policy_cards}, status=status.HTTP_201_CREATED)
-            '''
-            return Response({"message": "ok" }, status=status.HTTP_201_CREATED)
+            return Response({"message": "Policy cards generated successfully", "policy_cards": generated_policy_cards}, status=status.HTTP_201_CREATED)
                 
             
