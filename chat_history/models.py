@@ -30,6 +30,7 @@ class Survey(models.Model):
     questions = models.CharField(max_length=255)
     user_needs = models.IntegerField()
     options = models.JSONField()
+    survey_updated=models.BooleanField(default=False)
     timestamp = models.DateTimeField(auto_now_add=True)
     
     def __str__(self):

@@ -8,20 +8,22 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-def initialize_openai_model(api_key):
+
+
+def initialize_openai_model():
     # Initialize the OpenAI model with your API key
     # Here, we use the `OpenAI` class from Langchain
-    return OpenAI(openai_api_key=api_key)
+    return OpenAI(openai_api_key=os.getenv("apikey"))
 
 def generate_response(user_input, past_convo):
     # Construct a conversation chain with the model, prompt, and memory
-    model = initialize_openai_model(os.getenv("apikey"))
+    model = initialize_openai_model()
     memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
 
     prompt = ChatPromptTemplate(
         messages=[
             SystemMessagePromptTemplate.from_template(
-                "You are a helpful government assistant."
+                "You are a helpful and inquisitive government assistant who seeks to understand and empathize to discover the root of people's problems."
             ),
             MessagesPlaceholder(variable_name="chat_history"),
             HumanMessagePromptTemplate.from_template("{question}"),
@@ -47,10 +49,10 @@ def generate_response(user_input, past_convo):
 
     return ai_response
 
-'''
+'''`
 def main():
-    api_key = apikey  # Replace with your actual API key
-    model = initialize_openai_model(api_key)
+     # Replace with your actual API key
+    model = initialize_openai_model()
 
     past_convo = [
         {"user": "Query 1", "AI": "Answer 1"},
@@ -71,5 +73,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+    
+    
 '''
-

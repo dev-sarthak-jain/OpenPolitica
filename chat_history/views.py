@@ -93,6 +93,7 @@ class CreateMessages(APIView):
         user = get_object_or_404(User, id=user_id)
         # Generate AI response based on user input
         ######ai_response = llm_response(user_response)
+        
         ai_response = generate_response(user_response, message_data)
 
         chat_message = ChatMessage.objects.create(
@@ -181,6 +182,7 @@ class SurveyUpdateApiView(APIView):
 
             # Update the survey options
             survey.options = new_options
+            #survey.survey_updated=True
             survey.save()
 
             # Serialize and return the updated survey
@@ -196,26 +198,54 @@ class PolicyCardApiView(APIView):
         survey = get_object_or_404(Survey, pk=survey_id)
         
         
-        data = {}
-        for i in survey.options:
-            data[i[0]] = i[1]
-            
-        policy_cards = generate_policy_card(data)
+        if survey.survey_updated == False:
+            data = []
+            for i in survey.options:
+                data.append(i[0])
+                
+            policy_cards = generate_policy_card(data)
         
         # Assuming generate_policy_card returns a list of dictionaries
-        generated_policy_cards = []
-        for policy_card_data in policy_cards:
-            # Add the survey_id and transcript_id to the policy card data
-            policy_card_data['survey_id'] = survey_id
-            policy_card_data['transcript_id'] = transcript_id
+            generated_policy_cards = []
+            for policy_card_data in policy_cards:
+                # Add the survey_id and transcript_id to the policy card data
+                policy_card_data['survey_id'] = survey_id
+                policy_card_data['transcript_id'] = transcript_id
+                
+                # Assuming you have a serializer for PolicyCard
+                serializer = PolicyCardSerializer(data=policy_card_data)
+                if serializer.is_valid():
+                    policy_card = serializer.save()
+                    generated_policy_cards.append(PolicyCardSerializer(policy_card).data)
+                else:
+                    # If there's an error in serialization, you can handle it accordingly
+                    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
             
-            # Assuming you have a serializer for PolicyCard
-            serializer = PolicyCardSerializer(data=policy_card_data)
-            if serializer.is_valid():
-                policy_card = serializer.save()
-                generated_policy_cards.append(PolicyCardSerializer(policy_card).data)
-            else:
-                # If there's an error in serialization, you can handle it accordingly
-                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"message": "Policy cards generated successfully", "policy_cards": generated_policy_cards}, status=status.HTTP_201_CREATED)
+            
+        else:
+            data = {}
+            for i in survey.options:
+                data[i[0]]=i[1]
+                
+            policy_cards = generate_policy_card(data)
         
-        return Response({"message": "Policy cards generated successfully", "policy_cards": generated_policy_cards}, status=status.HTTP_201_CREATED)
+            # Assuming generate_policy_card returns a list of dictionaries
+            generated_policy_cards = []
+            for policy_card_data in policy_cards:
+                # Add the survey_id and transcript_id to the policy card data
+                policy_card_data['survey_id'] = survey_id
+                policy_card_data['transcript_id'] = transcript_id
+                
+                # Assuming you have a serializer for PolicyCard
+                serializer = PolicyCardSerializer(data=policy_card_data)
+                if serializer.is_valid():
+                    policy_card = serializer.save()
+                    generated_policy_cards.append(PolicyCardSerializer(policy_card).data)
+                else:
+                    # If there's an error in serialization, you can handle it accordingly
+                    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            
+            return Response({"message": "Policy cards generated successfully", "policy_cards": generated_policy_cards}, status=status.HTTP_201_CREATED)
+                
+            
