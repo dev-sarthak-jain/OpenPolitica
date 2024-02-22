@@ -28,7 +28,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv("Settings_SECRET_KEY")
 JWT_SECRET = os.getenv("Settings_JWT_SECRET")
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv("Settings_DEBUG").lower() == "true"
+DEBUG = False #os.getenv("Settings_DEBUG").lower() == "true"
 
 ALLOWED_HOSTS = ['*']
 
