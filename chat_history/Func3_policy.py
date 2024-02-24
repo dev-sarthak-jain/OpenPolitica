@@ -1,10 +1,11 @@
 import requests
 import os
 from dotenv import load_dotenv
-load_dotenv()
-import time 
+import time
 import json
-import datetime 
+import datetime
+
+load_dotenv()
 
 def generate_policy_card(user_needs_input):
     policy_cards = []
@@ -12,79 +13,58 @@ def generate_policy_card(user_needs_input):
     # Get current date in YYYY-MM-DD format
     today_date = datetime.date.today().strftime("%Y-%m-%d")
 
-    # Determine if input is a dict (with rankings) or list (without rankings)
-    if isinstance(user_needs_input, dict):
-        user_needs = user_needs_input.items()
-    else:
-        user_needs = [(need, None) for need in user_needs_input]
-
-    for idx, (need, ranking) in enumerate(user_needs, 1):
-        if ranking is not None:
-            prompt = f"Generate a policy recommendation for the following user need:\n- {need} (Ranking: {ranking})\n"
-        else:
-            prompt = f"Generate a policy recommendation for the following user need:\n- {need}\n"
+    for idx, (need, ranking) in enumerate(user_needs_input.items() if isinstance(user_needs_input, dict) else [(need, None) for need in user_needs_input], 1):
+        # Constructing the system message to instruct the model to output JSON
+        system_message = "You are a helpful assistant of humanity designed to see a user/human need or desired outcome and output a potentially intelligent policy recommendation in JSON format."
+        
+        user_message_content = f"Generate a policy recommendation in JSON format for the following user need: {need}" + (f" (Ranking: {ranking})" if ranking is not None else "")
+        
+        data = {
+            "model": "gpt-3.5-turbo-0125",  # Specify the model
+            "messages": [
+                {"role": "system", "content": system_message},
+                {"role": "user", "content": user_message_content}
+            ],
+            "response_format": {"type": "json_object"}  # Enable JSON mode
+        }
 
         headers = {
-            'Authorization': f'Bearer {os.getenv("apikey")}',
+            'Authorization': f'Bearer {os.getenv("OPENAI_API_KEY")}',
             'Content-Type': 'application/json'
         }
 
-        data = {
-            "model": "text-davinci-003", 
-            "prompt": prompt,
-            "max_tokens": 150
-        }
-
         try:
-            response = requests.post('https://api.openai.com/v1/completions', headers=headers, json=data)
-            response.raise_for_status()
+            response = requests.post('https://api.openai.com/v1/chat/completions', json=data, headers=headers)
+            response.raise_for_status()  # This will raise an exception for HTTP error codes
             response_data = response.json()
+            
+            # Extracting the JSON content from the message
+            policy_recommendation_json = json.loads(response_data['choices'][0]['message']['content'])
 
-            policy_recommendation = response_data.get('choices', [{}])[0].get('text', '').strip()
-
-            if not policy_recommendation:
-                policy_recommendation = "No recommendation could be generated."
+            # Assuming policy_recommendation_json contains the fields you need
+            policy_card = {
+                "content": policy_recommendation_json.get("recommendation", "No recommendation could be generated."),
+                "userneed_id": idx,
+                "category": "Urban Development",
+                "effective_date": today_date,
+                "policy_makers": policy_recommendation_json.get("policy_makers", "N/A"),
+                "voting_status": policy_recommendation_json.get("voting_status", False),
+                "regional_info": policy_recommendation_json.get("regional_info", "N/A")
+            }
 
         except requests.RequestException as e:
-            print(f"Error: {e}")
-            policy_recommendation = "Error in generating recommendation."
-
-        policy_card = {
-            "content": policy_recommendation,
-            "userneed_id": idx,
-            "category": "Urban Development",
-            "effective_date": today_date,
-            "policy_makers": "N/A",
-            "voting_status": False,
-            "regional_info": "N/A"
-        }
+            print(f"Request failed: {e}")
+            policy_card = {
+                "content": "Error in generating recommendation.",
+                "userneed_id": idx,
+                "category": "Urban Development",
+                "effective_date": today_date,
+                "policy_makers": "N/A",
+                "voting_status": False,
+                "regional_info": "N/A"
+            }
 
         policy_cards.append(policy_card)
-        time.sleep(0.5)
+        time.sleep(0.5)  # Be mindful of the rate limits
 
     return policy_cards
-
-# Example usage with and without rankings
-user_needs_with_rankings = {
-    "Affordability of food in local area": 5,
-    "Safety of local area": 3,
-    "Affordability of college": 4
-}
-
-user_needs_without_rankings = [
-    "Affordability of food in local area",
-    "Safety of local area",
-    "Affordability of college"
-]
-
-'''
-policy_cards_with_rankings = generate_policy_cards(user_needs_with_rankings, openai_api_key)
-policy_cards_without_rankings = generate_policy_cards(user_needs_without_rankings, openai_api_key)
-
-# Print policy cards
-for card in policy_cards_with_rankings:
-    print(json.dumps(card, indent=2))
-
-for card in policy_cards_without_rankings:
-    print(json.dumps(card, indent=2))
-'''
