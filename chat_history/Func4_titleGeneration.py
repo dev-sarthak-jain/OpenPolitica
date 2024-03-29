@@ -1,6 +1,5 @@
 # Func4_titleGeneration.py
 import openai # Ensure you have the OpenAI library installed
-from openai import OpenAI
 import os
 from dotenv import load_dotenv
 load_dotenv()
@@ -19,7 +18,7 @@ def generate_chat_title(question):
         str: A concise title for the chat, 5-6 words long.
     """
     # Initialize the OpenAI client
-    client = OpenAI()
+    client = openai.OpenAI()
 
     # Setup the chat completion API call
     try:
