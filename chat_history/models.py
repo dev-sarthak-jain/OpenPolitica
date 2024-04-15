@@ -9,7 +9,7 @@ class Transcript(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"Transcript {self.transcript_id} by {self.user.username}"
+        return f"Transcript {self.transcript_id} by {self.user.email}"
 
 
 class ChatMessage(models.Model):
@@ -32,6 +32,6 @@ class Survey(models.Model):
     options = models.JSONField()
     survey_updated=models.BooleanField(default=False)
     timestamp = models.DateTimeField(auto_now_add=True)
-    
+
     def __str__(self):
         return f"Survey {self.survey_id}"

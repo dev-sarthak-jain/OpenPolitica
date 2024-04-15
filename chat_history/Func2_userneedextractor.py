@@ -3,12 +3,13 @@ import datetime
 import json
 import os
 from dotenv import load_dotenv
-load_dotenv()
+load_dotenv(override=True)
 
 #apikey = ""
-from langchain.llms import OpenAI
-from langchain.prompts import PromptTemplate
+# Updated imports
+from langchain_openai import OpenAI
 from langchain.chains import LLMChain
+from langchain.prompts import PromptTemplate, ChatPromptTemplate, SystemMessagePromptTemplate, HumanMessagePromptTemplate
 from langchain.memory import ConversationBufferMemory
 
 # Assuming apikey is correctly imported
@@ -83,7 +84,7 @@ class UserNeedsExtractor:
             "options": options
         }
         return survey
-   
+
     def save_concerns_to_database(self, structured_needs):
         # Implement database integration here
         pass
@@ -93,44 +94,47 @@ class UserNeedsExtractor:
         survey = self.generate_survey(structured_needs, [-3, -2, -2, -1, -1, -1, 0, 0, 1, 1, 1, 2, 2, 3])
         self.save_concerns_to_database(structured_needs)
         return structured_needs, survey
-'''
-# Usage Example
-extractor = UserNeedsExtractor()
-chat_transcript = [
-    {"role": "user", "content": "Hi, I'm really concerned about the lack of public parks in our area."},
-    {"role": "assistant", "content": "That's a valid concern. Do you think having more public parks would benefit the community?"},
-    {"role": "user", "content": "Absolutely, especially for families and children. It's important to have green spaces."},
-    {"role": "assistant", "content": "I understand. Green spaces are essential for a healthy community. Anything else on your mind?"},
-    {"role": "user", "content": "Yes, I'm also worried about the public transport system. It's not very reliable."},
-    {"role": "assistant", "content": "Reliability of public transportation is indeed crucial for daily commuters. How often do you face issues with it?"},
-    {"role": "user", "content": "Almost every day. The buses are either late or too crowded."},
-    {"role": "assistant", "content": "That must be frustrating. Reliable and comfortable public transport is important. Any other issues?"},
-    {"role": "user", "content": "Well, there's one more thing. I'm not very satisfied with the local health services."},
-    {"role": "assistant", "content": "Can you tell me more about what's lacking in the local health services?"},
-    {"role": "user", "content": "The waiting times are too long and there aren't enough specialized medical facilities."},
-    {"role": "assistant", "content": "Long waiting times and lack of specialized facilities can indeed be a concern. Thank you for sharing your thoughts."}
-]
-
-data = [
-    {'role': 'user', 'content': "Hi, I'm really concerned about the lack of public parks in our area."},
-    {'role': 'assistant', 'content': 'System: You can contact your local government and ask them about any initiatives they have to create or improve public parks. You can also get involved in local advocacy groups that are working to increase access to green spaces in your area. Additionally, you can volunteer with local organizations that are working to improve public parks and green spaces.'},
-    {'role': 'user', 'content': "especially for families and children. It's important to have green spaces."},
-    {'role': 'assistant', 'content': 'System: Absolutely, green spaces are essential for providing a safe and healthy environment for families and children. You can contact your local government to ask if they are developing any projects to create or maintain these green spaces. You can also research any nearby organizations or initiatives that are working to protect and improve green spaces, and see if you can volunteer or get involved in their efforts. Additionally, you can reach out to your local schools and see if they have any initiatives for improving public parks and green spaces.'},
-    {'role': 'user', 'content': "I'm also worried about the public transport system. It's not very reliable"},
-    {'role': 'assistant', 'content': 'System: Public transport is an important resource for many people, and it is important to ensure that it is reliable and accessible. You can contact your local government to see what initiatives they have in place to improve public transport. Additionally, you can get involved in local advocacy groups that are working to ensure that public transport is accessible and reliable for all. You can also research any local initiatives that are working to improve public transport and see if you can volunteer to help with their efforts.'},
-    {'role': 'user', 'content': 'Almost every day. The buses are either late or too crowded.'},
-    {'role': 'assistant', 'content': 'System: That is definitely a problem. You can contact your local government and ask them about any initiatives they have in place to improve public transport. Additionally, you can research any local initiatives or advocacy groups that are working to ensure that public transport is reliable and accessible. You can also contact your local bus company to see if they have any initiatives or plans to improve their service.'},
-    {'role': 'user', 'content': "there's one more thing. I'm not very satisfied with the local health services."},
-    {'role': 'assistant', 'content': 'System: Access to quality health services is essential for the well-being of all citizens. You can contact your local government and ask them about any initiatives they have to improve the quality of local health services. Additionally, you can research any local initiatives or advocacy groups that are working to ensure that health services are accessible and reliable for all. You can also contact your local health services and see if they have any initiatives or plans to improve their services.'},
-    {'role': 'user', 'content': "The waiting times are too long and there aren't enough specialized medical facilities."},
-    {'role': 'assistant', 'content': 'System: That is definitely a problem. You can contact your local government and ask them about any initiatives they have in place to improve the quality of local health services, such as reducing waiting times and increasing access to specialist medical facilities. Additionally, you can research any local initiatives or advocacy groups that are working to ensure that health services are accessible and reliable for all. You can also contact your local health services and see if they have any initiatives or plans to improve their services.'}
-]
 
 
-structured_needs, survey = extractor.run(chat_transcript)
-print(structured_needs)
-print(survey)
-'''
+# # Usage Example
+# extractor = UserNeedsExtractor()
+# chat_transcript = [
+#     {"role": "user", "content": "Hi, I'm really concerned about the lack of public parks in our area."},
+#     {"role": "assistant", "content": "That's a valid concern. Do you think having more public parks would benefit the community?"},
+#     {"role": "user", "content": "Absolutely, especially for families and children. It's important to have green spaces."},
+#     {"role": "assistant", "content": "I understand. Green spaces are essential for a healthy community. Anything else on your mind?"},
+#     {"role": "user", "content": "Yes, I'm also worried about the public transport system. It's not very reliable."},
+#     {"role": "assistant", "content": "Reliability of public transportation is indeed crucial for daily commuters. How often do you face issues with it?"},
+#     {"role": "user", "content": "Almost every day. The buses are either late or too crowded."},
+#     {"role": "assistant", "content": "That must be frustrating. Reliable and comfortable public transport is important. Any other issues?"},
+#     {"role": "user", "content": "Well, there's one more thing. I'm not very satisfied with the local health services."},
+#     {"role": "assistant", "content": "Can you tell me more about what's lacking in the local health services?"},
+#     {"role": "user", "content": "The waiting times are too long and there aren't enough specialized medical facilities."},
+#     {"role": "assistant", "content": "Long waiting times and lack of specialized facilities can indeed be a concern. Thank you for sharing your thoughts."}
+# ]
+
+# data = [
+#     {'role': 'user', 'content': "Hi, I'm really concerned about the lack of public parks in our area."},
+#     {'role': 'assistant', 'content': 'System: You can contact your local government and ask them about any initiatives they have to create or improve public parks. You can also get involved in local advocacy groups that are working to increase access to green spaces in your area. Additionally, you can volunteer with local organizations that are working to improve public parks and green spaces.'},
+#     {'role': 'user', 'content': "especially for families and children. It's important to have green spaces."},
+#     {'role': 'assistant', 'content': 'System: Absolutely, green spaces are essential for providing a safe and healthy environment for families and children. You can contact your local government to ask if they are developing any projects to create or maintain these green spaces. You can also research any nearby organizations or initiatives that are working to protect and improve green spaces, and see if you can volunteer or get involved in their efforts. Additionally, you can reach out to your local schools and see if they have any initiatives for improving public parks and green spaces.'},
+#     {'role': 'user', 'content': "I'm also worried about the public transport system. It's not very reliable"},
+#     {'role': 'assistant', 'content': 'System: Public transport is an important resource for many people, and it is important to ensure that it is reliable and accessible. You can contact your local government to see what initiatives they have in place to improve public transport. Additionally, you can get involved in local advocacy groups that are working to ensure that public transport is accessible and reliable for all. You can also research any local initiatives that are working to improve public transport and see if you can volunteer to help with their efforts.'},
+#     {'role': 'user', 'content': 'Almost every day. The buses are either late or too crowded.'},
+#     {'role': 'assistant', 'content': 'System: That is definitely a problem. You can contact your local government and ask them about any initiatives they have in place to improve public transport. Additionally, you can research any local initiatives or advocacy groups that are working to ensure that public transport is reliable and accessible. You can also contact your local bus company to see if they have any initiatives or plans to improve their service.'},
+#     {'role': 'user', 'content': "there's one more thing. I'm not very satisfied with the local health services."},
+#     {'role': 'assistant', 'content': 'System: Access to quality health services is essential for the well-being of all citizens. You can contact your local government and ask them about any initiatives they have to improve the quality of local health services. Additionally, you can research any local initiatives or advocacy groups that are working to ensure that health services are accessible and reliable for all. You can also contact your local health services and see if they have any initiatives or plans to improve their services.'},
+#     {'role': 'user', 'content': "The waiting times are too long and there aren't enough specialized medical facilities."},
+#     {'role': 'assistant', 'content': 'System: That is definitely a problem. You can contact your local government and ask them about any initiatives they have in place to improve the quality of local health services, such as reducing waiting times and increasing access to specialist medical facilities. Additionally, you can research any local initiatives or advocacy groups that are working to ensure that health services are accessible and reliable for all. You can also contact your local health services and see if they have any initiatives or plans to improve their services.'}
+# ]
+
+
+# structured_needs, survey = extractor.run(chat_transcript)
+# print(structured_needs)
+# print(survey)
+
+
+
 # User Needs Extraction Output:
 # The output is a list of dictionaries, where each dictionary represents an extracted user need from the conversation. In your provided example, there is one extracted need:
 

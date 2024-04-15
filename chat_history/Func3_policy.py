@@ -1,70 +1,68 @@
-import requests
+from langchain_openai import OpenAI
+from langchain.chains import LLMChain
+from langchain.prompts import ChatPromptTemplate, SystemMessagePromptTemplate, HumanMessagePromptTemplate
+from langchain.memory import ConversationBufferMemory  # Or adjust based on available memory management
 import os
 from dotenv import load_dotenv
-import time
-import json
 import datetime
+import json
 
-load_dotenv()
+load_dotenv(override=True)
+
+def initialize_openai_model():
+    # openai_api_key = os.getenv("OPENAI_API_KEY")
+    openai_api_key = os.getenv("OPENAI_API_KEY")
+    return OpenAI(openai_api_key=openai_api_key)
+
+# Assuming necessary imports are done
 
 def generate_policy_card(user_needs_input):
+    model = initialize_openai_model()
     policy_cards = []
-
-    # Get current date in YYYY-MM-DD format
     today_date = datetime.date.today().strftime("%Y-%m-%d")
 
-    for idx, (need, ranking) in enumerate(user_needs_input.items() if isinstance(user_needs_input, dict) else [(need, None) for need in user_needs_input], 1):
-        # Constructing the system message to instruct the model to output JSON
-        system_message = "You are a helpful assistant of humanity designed to see a user/human need or desired outcome and output a potentially intelligent policy recommendation in JSON format."
-        
-        user_message_content = f"Generate a policy recommendation in JSON format for the following user need: {need}" + (f" (Ranking: {ranking})" if ranking is not None else "")
-        
-        data = {
-            "model": "gpt-3.5-turbo-0125",  # Specify the model
-            "messages": [
-                {"role": "system", "content": system_message},
-                {"role": "user", "content": user_message_content}
-            ],
-            "response_format": {"type": "json_object"}  # Enable JSON mode
-        }
+    for idx, (need, ranking) in enumerate(user_needs_input.items(), 1):
+        prompt_messages = [
+            SystemMessagePromptTemplate.from_template("You are a helpful assistant of humanity designed to see a user/human need or desired outcome and output a potentially intelligent policy recommendation."),
+            HumanMessagePromptTemplate.from_template(f"Need: {need}" + (f" (Ranking: {ranking})" if ranking else ""))
+        ]
 
-        headers = {
-            'Authorization': f'Bearer {os.getenv("OPENAI_API_KEY")}',
-            'Content-Type': 'application/json'
-        }
-
+        prompt = ChatPromptTemplate(messages=prompt_messages)
+        llmchain = LLMChain(llm=model, prompt=prompt)
         try:
-            response = requests.post('https://api.openai.com/v1/chat/completions', json=data, headers=headers)
-            response.raise_for_status()  # This will raise an exception for HTTP error codes
-            response_data = response.json()
-            
-            # Extracting the JSON content from the message
-            policy_recommendation_json = json.loads(response_data['choices'][0]['message']['content'])
+            # .invoke({"question": user_input})
+            response = llmchain.invoke({}, temperature=0.7)
+            recommendation = response['text'].split('\n')[-1].strip("AI: ")
+        except Exception as e:
+            print(f"Error during recommendation generation: {e}")
+            recommendation = "Error in generating recommendation."
 
-            # Assuming policy_recommendation_json contains the fields you need
-            policy_card = {
-                "content": policy_recommendation_json.get("recommendation", "No recommendation could be generated."),
-                "userneed_id": idx,
-                "category": "Urban Development",
-                "effective_date": today_date,
-                "policy_makers": policy_recommendation_json.get("policy_makers", "N/A"),
-                "voting_status": policy_recommendation_json.get("voting_status", False),
-                "regional_info": policy_recommendation_json.get("regional_info", "N/A")
-            }
-
-        except requests.RequestException as e:
-            print(f"Request failed: {e}")
-            policy_card = {
-                "content": "Error in generating recommendation.",
-                "userneed_id": idx,
-                "category": "Urban Development",
-                "effective_date": today_date,
-                "policy_makers": "N/A",
-                "voting_status": False,
-                "regional_info": "N/A"
-            }
+        policy_card = {
+            "content": recommendation,
+            "userneed_id": idx,
+            "category": "Urban Development",
+            "effective_date": today_date,
+            "policy_makers": "N/A",
+            "voting_status": False,
+            "regional_info": "N/A"
+        }
 
         policy_cards.append(policy_card)
-        time.sleep(0.5)  # Be mindful of the rate limits
 
     return policy_cards
+
+
+
+
+# # Example usage, adjust as necessary
+# user_needs_with_rankings = {
+#     "Affordability of food in local area": 5,
+#     "Safety of local area": 3,
+#     "Affordability of college": 4
+# }
+
+# policy_cards_with_rankings = generate_policy_card(user_needs_with_rankings)
+
+# # Print policy cards
+# for card in policy_cards_with_rankings:
+#     print(json.dumps(card, indent=2))

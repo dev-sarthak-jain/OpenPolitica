@@ -31,7 +31,7 @@ class AllTranscripts(APIView):
     def get(self, request, user_id):
         # Retrieve all transcripts for the given user
         user_transcripts = Transcript.objects.filter(user_id=user_id)
-        
+
         # Serialize and return the transcripts
         serializer = TranscriptSerializer(user_transcripts, many=True)
         return Response(serializer.data)
@@ -50,11 +50,11 @@ class GenerateUpdateTitle(APIView):
         transcript.save()
         serializer = TranscriptSerializer(transcript)
         return Response(serializer.data, status=status.HTTP_200_OK)
-    
+
     def patch(self, request, transcript_id):
         # Get the transcript object or return a 404 if not found
         transcript = get_object_or_404(Transcript, transcript_id=transcript_id)
-        
+
         # Extract the new title from the request data
         new_title = request.data.get('title')
 
@@ -70,11 +70,11 @@ class CreateMessages(APIView):
     def get(self, request, transcript_id):
         # Get the transcript object or return a 404 if not found
         transcript = get_object_or_404(Transcript, pk=transcript_id)
-        
+
         # Retrieve all messages of a particular transcript
         user_messages = ChatMessage.objects.filter(transcript=transcript_id)
-        
-        
+
+
         # Serialize and return the messages
         serializer = ChatMessagesSerializer(user_messages, many=True)
         return Response(serializer.data)
@@ -82,19 +82,31 @@ class CreateMessages(APIView):
     def post(self, request, transcript_id):
         # Get the transcript object or return a 404 if not found
         transcript = get_object_or_404(Transcript, pk=transcript_id)
-        
-        messages = ChatMessage.objects.filter(transcript=transcript_id).order_by('timestamp')
-        message_data = [{"user":message.user_response,"AI":message.ai_response} for message in messages]
+        transcript_id2 = transcript.transcript_id
 
-        
+        messages = ChatMessage.objects.filter(transcript=transcript_id2).order_by('timestamp')
+        message_data = [{"user":message.user_response,"AI":message.ai_response} for message in messages]
+    #     # message_data ={'user_response': 'Hello', 'user': 2, "AI": "Answer 1"}
+    #     message_data = [
+    #     {"user": "Hello", "AI": "Answer 1"},
+    #     {"user": "Query 2", "AI": "Answer 2"},
+    #     {"user": "Query 3", "AI": "Answer 3"}
+    # ]
+
         # Extract user_response from the request data (adjust based on your request structure)
         user_response = request.data.get('user_response')
+
         user_id = request.data.get('user')
         user = get_object_or_404(User, id=user_id)
+
+
+
         # Generate AI response based on user input
         ######ai_response = llm_response(user_response)
-        
-        ai_response = generate_response(user_response, message_data)
+
+
+        ai_response = generate_response(user_input=user_response, past_convo=message_data)
+        # print(f"fther {user} {ai_response}")
 
         chat_message = ChatMessage.objects.create(
             transcript=transcript,
@@ -102,6 +114,7 @@ class CreateMessages(APIView):
             user_response=user_response,
             ai_response=ai_response
         )
+
         chat_message.save()
         serializer = ChatMessagesSerializer(chat_message)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -116,7 +129,7 @@ class ChatMessageList(APIView):
         queryset = ChatMessage.objects.all()
         serializer = ChatMessagesSerializer(queryset, many = True)
         return Response(serializer.data)
-    
+
 
 class SurveyAPIView(APIView):
     def post(self, request):
@@ -126,11 +139,11 @@ class SurveyAPIView(APIView):
             return Response(serialized_survey.data, status=status.HTTP_201_CREATED)
         else:
             return Response(serialized_survey.errors, status=status.HTTP_400_BAD_REQUEST)
-        
-        
-   
-        
-    
+
+
+
+
+
     def get(self, request, user_id, transcript_id):
         # Get the transcript object
         transcript = get_object_or_404(Transcript, pk=transcript_id)
@@ -171,7 +184,7 @@ class SurveyAPIView(APIView):
 
 
 class SurveyUpdateApiView(APIView):
-    
+
     def patch(self, request, survey_id):
         survey = get_object_or_404(Survey, pk=survey_id)
         new_options = request.data.get('options')
@@ -193,25 +206,25 @@ class SurveyUpdateApiView(APIView):
 
 
 class PolicyCardApiView(APIView):
-    
+
     def get(self, request, survey_id, transcript_id):
         survey = get_object_or_404(Survey, pk=survey_id)
-        
-        
+
+
         if survey.survey_updated == False:
             data = []
             for i in survey.options:
                 data.append(i[0])
-                
+
             policy_cards = generate_policy_card(data)
-        
+
         # Assuming generate_policy_card returns a list of dictionaries
             generated_policy_cards = []
             for policy_card_data in policy_cards:
                 # Add the survey_id and transcript_id to the policy card data
                 policy_card_data['survey_id'] = survey_id
                 policy_card_data['transcript_id'] = transcript_id
-                
+
                 # Assuming you have a serializer for PolicyCard
                 serializer = PolicyCardSerializer(data=policy_card_data)
                 if serializer.is_valid():
@@ -220,24 +233,24 @@ class PolicyCardApiView(APIView):
                 else:
                     # If there's an error in serialization, you can handle it accordingly
                     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-            
+
             return Response({"message": "Policy cards generated successfully", "policy_cards": generated_policy_cards}, status=status.HTTP_201_CREATED)
-            
+
         else:
             data = {}
-            
+
             for i in survey.options:
                 data[i[0]]=i[1]
-                
+
             policy_cards = generate_policy_card(data)
-        
+
             # Assuming generate_policy_card returns a list of dictionaries
             generated_policy_cards = []
             for policy_card_data in policy_cards:
                 # Add the survey_id and transcript_id to the policy card data
                 policy_card_data['survey_id'] = survey_id
                 policy_card_data['transcript_id'] = transcript_id
-                
+
                 # Assuming you have a serializer for PolicyCard
                 serializer = PolicyCardSerializer(data=policy_card_data)
                 if serializer.is_valid():
@@ -247,5 +260,3 @@ class PolicyCardApiView(APIView):
                     # If there's an error in serialization, you can handle it accordingly
                     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
             return Response({"message": "Policy cards generated successfully", "policy_cards": generated_policy_cards}, status=status.HTTP_201_CREATED)
-                
-            
